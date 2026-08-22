@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moonvalley | Admin Upload Panel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            background-image: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=2048&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        .admin-card {
+            background: rgba(5, 10, 18, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            width: 450px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            margin: 20px 0;
+            z-index: 10;
+        }
+
+        .admin-card h2 {
+            color: #00e5ff;
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .admin-card p {
+            color: #8ab4f8;
+            margin-bottom: 20px;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #8ab4f8;
+            margin-bottom: 4px;
+        }
+
+        .admin-card input, .admin-card select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 5px;
+            outline: none;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .admin-card input:focus, .admin-card select:focus {
+            border: 1px solid #00e5ff;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        .admin-card button {
+            width: 100%;
+            padding: 11px;
+            background: #00e5ff;
+            color: #020408;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+        }
+
+        .admin-card button:hover {
+            background: white;
+            box-shadow: 0 0 20px white;
+        }
+
+        #response-msg {
+            margin-top: 12px;
+            text-align: center;
+            font-size: 13px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="admin-card">
+        <h2>🛠️ Admin Upload Portal</h2>
+        <p>Add Reels & Set Unique Passwords for Clippers</p>
+
+        <form id="adminForm" onsubmit="uploadContent(event)">
+            <div class="form-group">
+                <label>Client Username</label>
+                <input type="text" id="username" required placeholder="e.g. user001">
+            </div>
+
+            <div class="form-group">
+                <label>Client Unique Password</label>
+                <input type="text" id="password" required placeholder="Set password for this user">
+            </div>
+
+            <div class="form-group">
+                <label>Video Title / Reel Caption</label>
+                <input type="text" id="title" required placeholder="e.g. Valorant Montage">
+            </div>
+
+            <div class="form-group">
+                <label>Platform</label>
+                <select id="platform">
+                    <option value="youtube">YouTube Shorts</option>
+                    <option value="instagram">Instagram Reel</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Thumbnail Image URL</label>
+                <input type="text" id="thumbnailUrl" placeholder="https://example.com/image.jpg">
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Views</label>
+                    <input type="number" id="views" value="0">
+                </div>
+                <div style="flex: 1;">
+                    <label>Likes</label>
+                    <input type="number" id="likes" value="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Approval Status</label>
+                <select id="status">
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+
+            <button type="submit">🚀 Upload & Save Credentials</button>
+        </form>
+
+        <p id="response-msg"></p>
+    </div>
+
+    <script>
+        async function uploadContent(event) {
+            event.preventDefault();
+
+            const payload = {
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value.trim(),
+                title: document.getElementById('title').value.trim(),
+                platform: document.getElementById('platform').value,
+                thumbnailUrl: document.getElementById('thumbnailUrl').value.trim(),
+                views: Number(document.getElementById('views').value),
+                likes: Number(document.getElementById('likes').value),
+                status: document.getElementById('status').value
+            };
+
+            const msgBox = document.getElementById('response-msg');
+
+            try {
+                let response = await fetch('http://localhost:5000/api/admin/add-content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                let result = await response.json();
+
+                if (result.success) {
+                    msgBox.style.color = "#2ed573";
+                    msgBox.innerText = result.message;
+                    msgBox.style.display = "block";
+                    document.getElementById('adminForm').reset();
+                } else {
+                    msgBox.style.color = "#ff4757";
+                    msgBox.innerText = result.error || "Something went wrong!";
+                    msgBox.style.display = "block";
+                }
+            } catch (error) {
+                msgBox.style.color = "#ff4757";
+                msgBox.innerText = "Server error! Make sure backend is running.";
+                msgBox.style.display = "block";
+            }
+        }
+
+        // 3D Moon Background
+        const canvas = document.getElementById('bg-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.set(0, 0, 10);
+
+        const geometry = new THREE.SphereGeometry(3.5, 64, 64);
+        const textureLoader = new THREE.TextureLoader();
+        const moonTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
+        const material = new THREE.MeshStandardMaterial({ map: moonTexture, roughness: 0.8, metalness: 0.1 });
+        const moon = new THREE.Mesh(geometry, material);
+        scene.add(moon);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 3, 5);
+        scene.add(dirLight);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            moon.rotation.y += 0.002;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
